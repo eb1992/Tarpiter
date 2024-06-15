@@ -10,6 +10,8 @@ Tarpiter is a [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) interpreter w
 
 ## Usage
 
+![](images/example.gif)
+
 ### Running the Program
 
 To run a program, use the following command:
