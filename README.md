@@ -46,7 +46,7 @@ To run the program in debug mode:
 
 ## Building
 
-To build the project, ensure you have make and a C compiler installed. This work out of the box in UNIX and in WSL2 for Windows. Then run:
+To build the project, ensure you have make and a C compiler installed. This works out of the box in UNIX and in WSL2 for Windows. Then run:
 
 ```bash
 make
