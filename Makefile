@@ -1,2 +1,7 @@
 CFLAGS = -Wall -Wextra -pedantic -O3 
-tarpiter: src/tarpiter.c ; cc src/tarpiter.c -o tarpiter $(CFLAGS) 
+BIN_DIR = $(HOME)/.local/bin/
+
+tarpiter: src/tarpiter.c
+	mkdir -p $(BIN_DIR)
+	cc src/tarpiter.c -o tarpiter $(CFLAGS) 
+	mv tarpiter $(BIN_DIR)
