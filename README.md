@@ -54,6 +54,8 @@ To build the project, ensure you have make and a C compiler installed. This work
 make
 ```
 
+This compiles the program and moves the resulting executable to `$HOME/.local/bin/`, make sure this directory is on your `$PATH`. Alternatively move the executable to another directory on your `$PATH`.
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
