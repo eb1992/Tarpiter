@@ -17,7 +17,7 @@ Tarpiter is a [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) interpreter w
 To run a program, use the following command:
 
 ```bash
-./tarpiter <file> [options]
+tarpiter <file> [options]
 ```
 
 ### Options
@@ -37,13 +37,13 @@ In debug mode, the following commands are available:
 ## Example
 
 ```bash
-./tarpiter exampleBF/hello.b
+tarpiter exampleBF/hello.b
 ```
 
 To run the program in debug mode:
 
 ```bash
-./tarpiter exampleBF/hello.b -d
+tarpiter exampleBF/hello.b -d
 ```
 
 ## Building
