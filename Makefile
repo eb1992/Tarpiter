@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Wextra -pedantic -O3 
+CFLAGS = -Wall -Wextra -Wconversion -pedantic -O3 
 BIN_DIR = $(HOME)/.local/bin/
 
 tarpiter: src/tarpiter.c

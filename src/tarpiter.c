@@ -1,9 +1,11 @@
 /*
-Beware of the Turing tar-pit in which everything is possible but nothing of interest is easy.
-  - Alan Perlis 
+Beware of the Turing tar-pit in which everything is possible but nothing of
+interest is easy.
+  - Alan Perlis
 */
 
 #include "../include/tarpiter.h"
+#include <stddef.h>
 
 int main(int argc, char **argv) {
   bool debug = false;
@@ -166,11 +168,11 @@ static void evaluate_token(Token token, unsigned char **cur_cell, char **bp,
     break;
 
   case DECR:
-    **cur_cell -= token.amount;
+    **cur_cell -= (unsigned char)token.amount;
     break;
 
   case INCR:
-    **cur_cell += token.amount;
+    **cur_cell += (unsigned char)token.amount;
     break;
 
   case JMP_F:
@@ -187,7 +189,7 @@ static void evaluate_token(Token token, unsigned char **cur_cell, char **bp,
 
   case PRINT: {
     if (*bp - output_buffer < OUTPUT_BUFFER_SIZE) {
-      *(*bp)++ = **cur_cell == 10 ? '\n' : **cur_cell;
+      *(*bp)++ = (char)(**cur_cell == 10 ? '\n' : **cur_cell);
       **bp = '\0';
     } else {
       puts(output_buffer);
@@ -204,7 +206,7 @@ static void evaluate_token(Token token, unsigned char **cur_cell, char **bp,
 
     int n = getchar();
     if (n != EOF) {
-      **cur_cell = n == '\n' ? 10 : n;
+      **cur_cell = (unsigned char)(n == '\n' ? 10 : n);
     }
     break;
   }
@@ -212,7 +214,7 @@ static void evaluate_token(Token token, unsigned char **cur_cell, char **bp,
 }
 
 // Check if the character is a valid BF instruction
-static bool is_valid(char c) {
+static bool is_valid(int c) {
   return c == INCR || c == DECR || c == LEFT || c == RIGHT || c == JMP_F ||
          c == JMP_B || c == PRINT || c == INPUT;
 }
@@ -230,7 +232,7 @@ static FILE *open_file(const char *file_name) {
 // Get the size of the file
 static size_t get_file_size(FILE *file) {
   fseek(file, 0, SEEK_END);
-  size_t file_size = ftell(file);
+  size_t file_size = (size_t)ftell(file);
   fseek(file, 0, SEEK_SET);
   return file_size + 1;
 }
@@ -257,7 +259,7 @@ static void handle_user_input(size_t *skip, size_t ticks, bool *restart) {
   char line[MIN_ROW_SIZE];
   size_t steps;
   if (fgets(line, sizeof(line), stdin)) {
-    *line = toupper(*line);
+    *line = (char)toupper(*line);
     if (0 == strcmp(line, "Q\n")) {
       exit(EXIT_SUCCESS);
 
@@ -301,7 +303,7 @@ static void print_state(const unsigned char cells[],
 static void append_cells(const unsigned char *cells,
                          const unsigned char *cur_cell, size_t term_width,
                          char **bp) {
-  const size_t cell_index = cur_cell - cells;
+  const size_t cell_index = (size_t) (cur_cell - cells);
   const size_t half_row = term_width / SHOWN_CELL_WIDTH / 2;
   const size_t n_shown = term_width / SHOWN_CELL_WIDTH;
   const size_t first_cell = cell_index > half_row ? cell_index - half_row : 0;
@@ -325,7 +327,7 @@ static void append_cells(const unsigned char *cells,
   }
   *(*bp)++ = '\n';
 
-  append_pointer(cur_cell - cells, SHOWN_CELL_WIDTH, bp);
+  append_pointer((size_t)(cur_cell - cells), SHOWN_CELL_WIDTH, bp);
   *(*bp)++ = '\n';
 }
 

@@ -42,7 +42,7 @@ static void handle_jumps(Token tokens[], size_t n_tokens);
 static void evaluate_tokens(Token tokens[], size_t n_tokens, bool debug);
 static void evaluate_token(Token token, unsigned char **cur_cell, char **bp,
                            char *output_buffer, bool debug, size_t *instr_ptr);
-static bool is_valid(char c);
+static bool is_valid(int c);
 static FILE *open_file(const char *file_name);
 static size_t get_file_size(FILE *file);
 static size_t get_terminal_width();
