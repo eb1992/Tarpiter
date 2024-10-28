@@ -285,8 +285,7 @@ static void print_state(BF_state *state) {
   clear_terminal();
   bp += sprintf(bp, "Evaluated instructions: %zu\n\n", state->ticks);
 
-  append_program(state->tokens, state->n_tokens, state->instr_ptr, term_width,
-                 &bp);
+  append_program(state, term_width, &bp);
   append_cells(state->cells, state->cur_cell, term_width, &bp);
   bp += sprintf(bp, "[Enter]     - Evaluate single instruction.\n"
                     "<N> [Enter] - Evaluate <N> instructions.\n"
@@ -341,18 +340,17 @@ static void append_pointer(size_t steps, size_t step_size, char **bp) {
 }
 
 // Append the closest part of the program to the buffer
-static void append_program(const Token tokens[], size_t n_tokens,
-                           size_t token_index, size_t term_width, char **bp) {
+static void append_program(BF_state *state, size_t term_width, char **bp) {
   size_t half = term_width / 2;
-  size_t first_token = token_index > half ? token_index - half : 0;
+  size_t first_token = state->instr_ptr > half ? state->instr_ptr - half : 0;
   size_t i;
 
-  for (i = 0; i < term_width && n_tokens > first_token + i; i++) {
-    *(*bp)++ = tokens[first_token + i].op;
+  for (i = 0; i < term_width && state->n_tokens > first_token + i; i++) {
+    *(*bp)++ = state->tokens[first_token + i].op;
   }
   *(*bp)++ = '\n';
 
-  append_pointer(token_index - first_token, 1, bp);
+  append_pointer(state->instr_ptr - first_token, 1, bp);
 }
 
 // Clear the terminal

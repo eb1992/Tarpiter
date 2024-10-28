@@ -67,8 +67,7 @@ static void append_cells(const unsigned char *cells,
                          const unsigned char *cur_cell, size_t term_width,
                          char **bp);
 static void append_pointer(size_t steps, size_t step_size, char **bp);
-static void append_program(const Token tokens[], size_t n_tokens,
-                           size_t token_index, size_t term_width, char **bp);
+static void append_program(BF_state *state, size_t term_width, char **bp);
 static void clear_terminal(void);
 
 #endif // TARPITER_H
