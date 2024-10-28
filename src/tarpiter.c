@@ -287,8 +287,8 @@ static void handle_user_input(BF_state *state) {
 static void print_state(BF_state *state) {
 
   size_t term_width = get_terminal_width();
-  char buffer[term_width * N_LINES_IN_DEBUG];
-  char *debug_buffer_ptr = buffer;
+  char debug_buffer[term_width * N_LINES_IN_DEBUG];
+  char *debug_buffer_ptr = debug_buffer;
 
   clear_terminal();
   debug_buffer_ptr += sprintf(debug_buffer_ptr,
@@ -304,7 +304,7 @@ static void print_state(BF_state *state) {
                                 "Program output:");
   *debug_buffer_ptr = '\0';
 
-  puts(buffer);
+  puts(debug_buffer);
   puts(state->output_buffer);
 }
 
