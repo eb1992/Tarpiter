@@ -220,7 +220,7 @@ static void evaluate_token(BF_state *state) {
 }
 
 // Check if the character is a valid BF instruction
-static bool is_valid(int c) { return strchr("+-<>[].,", c); }
+static bool is_valid(int chr) { return strchr("+-<>[].,", chr); }
 
 // Open the file for reading
 static FILE *open_file(const char *file_name) {
@@ -280,19 +280,21 @@ static void print_state(BF_state *state) {
 
   size_t term_width = get_terminal_width();
   char buffer[term_width * N_LINES_IN_DEBUG];
-  char *bp = buffer;
+  char *debug_buffer_ptr = buffer;
 
   clear_terminal();
-  bp += sprintf(bp, "Evaluated instructions: %zu\n\n", state->ticks);
+  debug_buffer_ptr += sprintf(debug_buffer_ptr,
+                              "Evaluated instructions: %zu\n\n", state->ticks);
 
-  append_program(state, term_width, &bp);
-  append_cells(state->cells, state->cur_cell, term_width, &bp);
-  bp += sprintf(bp, "[Enter]     - Evaluate single instruction.\n"
-                    "<N> [Enter] - Evaluate <N> instructions.\n"
-                    "[R]eset     - Reset the debugger.\n"
-                    "[Q]uit      - Exit the debugger.\n\n"
-                    "Program output:");
-  *bp = '\0';
+  append_program(state, term_width, &debug_buffer_ptr);
+  append_cells(state->cells, state->cur_cell, term_width, &debug_buffer_ptr);
+  debug_buffer_ptr +=
+      sprintf(debug_buffer_ptr, "[Enter]     - Evaluate single instruction.\n"
+                                "<N> [Enter] - Evaluate <N> instructions.\n"
+                                "[R]eset     - Reset the debugger.\n"
+                                "[Q]uit      - Exit the debugger.\n\n"
+                                "Program output:");
+  *debug_buffer_ptr = '\0';
 
   puts(buffer);
   puts(state->output_buffer);
@@ -301,56 +303,61 @@ static void print_state(BF_state *state) {
 // Append the closest memory cells to the buffer
 static void append_cells(const unsigned char *cells,
                          const unsigned char *cur_cell, size_t term_width,
-                         char **bp) {
+                         char **debug_buffer_ptr) {
   const size_t cell_index = (size_t)(cur_cell - cells);
   const size_t half_row = term_width / SHOWN_CELL_WIDTH / 2;
   const size_t n_shown = term_width / SHOWN_CELL_WIDTH;
   const size_t first_cell = cell_index > half_row ? cell_index - half_row : 0;
 
-  *bp += sprintf(*bp, "Cells:\n");
+  *debug_buffer_ptr += sprintf(*debug_buffer_ptr, "Cells:\n");
 
   for (size_t i = 0; i < n_shown; i++) {
-    *bp += sprintf(*bp, "%3zu  ", (first_cell + i) % 1000);
+    *debug_buffer_ptr +=
+        sprintf(*debug_buffer_ptr, "%3zu  ", (first_cell + i) % 1000);
   }
-  *(*bp)++ = '\n';
+  *(*debug_buffer_ptr)++ = '\n';
 
   for (size_t i = 0; i < n_shown; i++) {
     unsigned char c =
         isprint(cells[first_cell + i]) ? cells[first_cell + i] : ' ';
-    *bp += sprintf(*bp, "[ %c ]", c);
+    *debug_buffer_ptr += sprintf(*debug_buffer_ptr, "[ %c ]", c);
   }
-  *(*bp)++ = '\n';
+  *(*debug_buffer_ptr)++ = '\n';
 
   for (size_t i = 0; i < n_shown; i++) {
-    *bp += sprintf(*bp, "[%3d]", cells[first_cell + i]);
+    *debug_buffer_ptr +=
+        sprintf(*debug_buffer_ptr, "[%3d]", cells[first_cell + i]);
   }
-  *(*bp)++ = '\n';
+  *(*debug_buffer_ptr)++ = '\n';
 
-  append_pointer((size_t)(cur_cell - cells), SHOWN_CELL_WIDTH, bp);
-  *(*bp)++ = '\n';
+  append_pointer((size_t)(cur_cell - cells), SHOWN_CELL_WIDTH,
+                 debug_buffer_ptr);
+  *(*debug_buffer_ptr)++ = '\n';
 }
 
 // Append a visual pointer to the buffer
-static void append_pointer(size_t steps, size_t step_size, char **bp) {
+static void append_pointer(size_t steps, size_t step_size,
+                           char **debug_buffer_ptr) {
   size_t n_chars = step_size * steps + step_size / 2;
-  memset(*bp, ' ', n_chars);
-  *(*bp + n_chars++) = '^';
-  *(*bp + n_chars++) = '\n';
-  *bp += n_chars;
+  memset(*debug_buffer_ptr, ' ', n_chars);
+  *(*debug_buffer_ptr + n_chars++) = '^';
+  *(*debug_buffer_ptr + n_chars++) = '\n';
+  *debug_buffer_ptr += n_chars;
 }
 
 // Append the closest part of the program to the buffer
-static void append_program(BF_state *state, size_t term_width, char **bp) {
+static void append_program(BF_state *state, size_t term_width,
+                           char **debug_buffer_ptr) {
   size_t half = term_width / 2;
   size_t first_token = state->instr_ptr > half ? state->instr_ptr - half : 0;
   size_t i;
 
   for (i = 0; i < term_width && state->n_tokens > first_token + i; i++) {
-    *(*bp)++ = state->tokens[first_token + i].op;
+    *(*debug_buffer_ptr)++ = state->tokens[first_token + i].op;
   }
-  *(*bp)++ = '\n';
+  *(*debug_buffer_ptr)++ = '\n';
 
-  append_pointer(state->instr_ptr - first_token, 1, bp);
+  append_pointer(state->instr_ptr - first_token, 1, debug_buffer_ptr);
 }
 
 // Clear the terminal
