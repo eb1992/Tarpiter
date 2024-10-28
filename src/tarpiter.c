@@ -6,6 +6,8 @@ interest is easy.
 
 #include "../include/tarpiter.h"
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 int main(int argc, char **argv) {
@@ -119,21 +121,23 @@ static void calculate_jumps(Token tokens[], size_t n_tokens) {
 // Evaluates the whole program
 static void evaluate_tokens(Token tokens[], size_t n_tokens, bool debug) {
 
-  unsigned char cells[N_CELLS];
-  char output_buffer[OUTPUT_BUFFER_SIZE];
-
   BF_state state;
   state.debug = debug;
   state.tokens = tokens;
   state.n_tokens = n_tokens;
-  state.cells = cells;
-  state.output_buffer = output_buffer;
+  state.cells = malloc(N_CELLS * sizeof(unsigned char));
+  state.output_buffer = malloc(OUTPUT_BUFFER_SIZE * sizeof(char));
+
+  if (state.cells == NULL || state.output_buffer == NULL) {
+    fprintf(stderr, "Memory allocation failed.");
+    exit(EXIT_FAILURE);
+  }
 
   do {
     state.restart = false;
-    memset(cells, 0, N_CELLS * sizeof(unsigned char));
+    memset(state.cells, 0, N_CELLS * sizeof(unsigned char));
 
-    state.cur_cell = cells;
+    state.cur_cell = state.cells;
     state.bp = state.output_buffer;
 
     *state.bp = '\0';
@@ -154,9 +158,12 @@ static void evaluate_tokens(Token tokens[], size_t n_tokens, bool debug) {
       state.ticks++;
     }
     if (!debug) {
-      printf("%s", output_buffer);
+      printf("%s", state.output_buffer);
     }
   } while (state.restart);
+
+  free(state.cells);
+  free(state.output_buffer);
 }
 
 // Evaluate a single token
