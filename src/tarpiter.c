@@ -220,10 +220,7 @@ static void evaluate_token(BF_state *state) {
 }
 
 // Check if the character is a valid BF instruction
-static bool is_valid(int c) {
-  return c == INCR || c == DECR || c == LEFT || c == RIGHT || c == JMP_F ||
-         c == JMP_B || c == PRINT || c == INPUT;
-}
+static bool is_valid(int c) { return strchr("+-<>[].,", c); }
 
 // Open the file for reading
 static FILE *open_file(const char *file_name) {
