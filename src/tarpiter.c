@@ -6,6 +6,7 @@ interest is easy.
 
 #include "../include/tarpiter.h"
 #include <stddef.h>
+#include <string.h>
 
 int main(int argc, char **argv) {
   bool debug = false;
@@ -25,7 +26,7 @@ int main(int argc, char **argv) {
     optimize(tokens, &n_tokens);
   }
 
-  handle_jumps(tokens, n_tokens);
+  calculate_jumps(tokens, n_tokens);
 
   evaluate_tokens(tokens, n_tokens, debug);
 
@@ -91,7 +92,7 @@ static void optimize(Token tokens[], size_t *n_tokens) {
 }
 
 // Handle jump instructions by giving addresses to '[' and ']'
-static void handle_jumps(Token tokens[], size_t n_tokens) {
+static void calculate_jumps(Token tokens[], size_t n_tokens) {
   size_t stack[n_tokens];
   size_t stack_p = 0;
 
@@ -120,93 +121,98 @@ static void evaluate_tokens(Token tokens[], size_t n_tokens, bool debug) {
 
   unsigned char cells[N_CELLS];
   char output_buffer[OUTPUT_BUFFER_SIZE];
-  bool restart;
+
+  BF_state state;
+  state.debug = debug;
+  state.tokens = tokens;
+  state.n_tokens = n_tokens;
+  state.cells = cells;
+  state.output_buffer = output_buffer;
 
   do {
-    restart = false;
+    state.restart = false;
     memset(cells, 0, N_CELLS * sizeof(unsigned char));
 
-    unsigned char *cur_cell = cells;
-    char *bp = output_buffer;
+    state.cur_cell = cells;
+    state.bp = state.output_buffer;
 
-    *bp = '\0';
-    size_t skip = 0;
-    size_t ticks = 0;
+    *state.bp = '\0';
+    state.skip = 0;
+    state.ticks = 0;
 
-    for (size_t instr_ptr = 0; instr_ptr < n_tokens; instr_ptr++) {
+    for (state.instr_ptr = 0; state.instr_ptr < n_tokens; state.instr_ptr++) {
 
-      if (debug && skip <= ticks) {
-        print_state(cells, cur_cell, tokens, n_tokens, ticks, instr_ptr,
-                    output_buffer);
-        handle_user_input(&skip, ticks, &restart);
-        if (restart) {
+      if (debug && state.skip <= state.ticks) {
+        print_state(&state);
+        handle_user_input(&state);
+        if (state.restart) {
           break;
         }
       }
 
-      evaluate_token(tokens[instr_ptr], &cur_cell, &bp, output_buffer, debug,
-                     &instr_ptr);
-      ticks++;
+      evaluate_token(&state);
+      state.ticks++;
     }
     if (!debug) {
       printf("%s", output_buffer);
     }
-  } while (restart);
+  } while (state.restart);
 }
 
 // Evaluate a single token
-static void evaluate_token(Token token, unsigned char **cur_cell, char **bp,
-                           char *output_buffer, bool debug, size_t *instr_ptr) {
+static void evaluate_token(BF_state *state) {
+  Token token = state->tokens[state->instr_ptr];
+
   switch (token.op) {
 
   case LEFT:
-    *cur_cell -= token.amount;
+    state->cur_cell -= token.amount;
     break;
 
   case RIGHT:
-    *cur_cell += token.amount;
+    state->cur_cell += token.amount;
     break;
 
   case DECR:
-    **cur_cell -= (unsigned char)token.amount;
+    *state->cur_cell -= (unsigned char)token.amount;
     break;
 
   case INCR:
-    **cur_cell += (unsigned char)token.amount;
+    *state->cur_cell += (unsigned char)token.amount;
     break;
 
   case JMP_F:
-    if (!**cur_cell) {
-      *instr_ptr = token.address;
+    if (!*state->cur_cell) {
+      state->instr_ptr = token.address;
     }
     break;
 
   case JMP_B:
-    if (**cur_cell) {
-      *instr_ptr = token.address;
+    if (*state->cur_cell) {
+      state->instr_ptr = token.address;
     }
     break;
 
   case PRINT: {
-    if (*bp - output_buffer < OUTPUT_BUFFER_SIZE) {
-      *(*bp)++ = (char)(**cur_cell == 10 ? '\n' : **cur_cell);
-      **bp = '\0';
+    if (state->bp - state->output_buffer < OUTPUT_BUFFER_SIZE) {
+      *(state->bp)++ = (char)(*state->cur_cell == 10 ? '\n' : *state->cur_cell);
+      *state->bp = '\0';
     } else {
-      puts(output_buffer);
-      *bp = output_buffer;
+      puts(state->output_buffer);
+      state->bp = state->output_buffer;
     }
     break;
   }
 
   case INPUT: {
-    if (!debug) {
-      puts(output_buffer);
-      *bp = output_buffer;
+    if (!state->debug) {
+      puts(state->output_buffer);
+      state->bp = state->output_buffer;
     }
 
     int n = getchar();
     if (n != EOF) {
-      **cur_cell = (unsigned char)(n == '\n' ? 10 : n);
+      *state->cur_cell = (unsigned char)(n == '\n' ? 10 : n);
     }
     break;
   }
@@ -255,7 +261,7 @@ static void print_usage(void) {
 }
 
 // Handle user input when debugging
-static void handle_user_input(size_t *skip, size_t ticks, bool *restart) {
+static void handle_user_input(BF_state *state) {
   char line[MIN_ROW_SIZE];
   size_t steps;
   if (fgets(line, sizeof(line), stdin)) {
@@ -264,19 +270,16 @@ static void handle_user_input(size_t *skip, size_t ticks, bool *restart) {
       exit(EXIT_SUCCESS);
 
     } else if (1 == sscanf(line, "%zu", &steps)) {
-      *skip = steps + ticks;
+      state->skip = steps + state->ticks;
 
     } else {
-      *restart = 0 == strcmp(line, "R\n");
+      state->restart = 0 == strcmp(line, "R\n");
     }
   }
 }
 
 // Print the current state when debugging
-static void print_state(const unsigned char cells[],
-                        const unsigned char *cur_cell, const Token tokens[],
-                        size_t n_tokens, size_t ticks, size_t token_index,
-                        const char output_buffer[]) {
+static void print_state(BF_state *state) {
 
   size_t term_width = get_terminal_width();
   size_t n_lines = 15;
@@ -284,10 +287,11 @@ static void print_state(const unsigned char cells[],
   char *bp = buffer;
 
   clear_terminal();
-  bp += sprintf(bp, "Evaluated instructions: %zu\n\n", ticks);
+  bp += sprintf(bp, "Evaluated instructions: %zu\n\n", state->ticks);
 
-  append_program(tokens, n_tokens, token_index, term_width, &bp);
-  append_cells(cells, cur_cell, term_width, &bp);
+  append_program(state->tokens, state->n_tokens, state->instr_ptr, term_width,
+                 &bp);
+  append_cells(state->cells, state->cur_cell, term_width, &bp);
   bp += sprintf(bp, "[Enter]     - Evaluate single instruction.\n"
                     "<N> [Enter] - Evaluate <N> instructions.\n"
                     "[R]eset     - Reset the debugger.\n"
@@ -296,14 +300,14 @@ static void print_state(const unsigned char cells[],
   *bp = '\0';
 
   puts(buffer);
-  puts(output_buffer);
+  puts(state->output_buffer);
 }
 
 // Append the closest memory cells to the buffer
 static void append_cells(const unsigned char *cells,
                          const unsigned char *cur_cell, size_t term_width,
                          char **bp) {
-  const size_t cell_index = (size_t) (cur_cell - cells);
+  const size_t cell_index = (size_t)(cur_cell - cells);
   const size_t half_row = term_width / SHOWN_CELL_WIDTH / 2;
   const size_t n_shown = term_width / SHOWN_CELL_WIDTH;
   const size_t first_cell = cell_index > half_row ? cell_index - half_row : 0;
