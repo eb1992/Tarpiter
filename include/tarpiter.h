@@ -14,6 +14,7 @@
 #define N_CELLS 65536
 #define SHOWN_CELL_WIDTH 5
 #define MIN_ROW_SIZE 40
+#define N_LINES_IN_DEBUG 17
 
 typedef enum {
   INCR = '+',

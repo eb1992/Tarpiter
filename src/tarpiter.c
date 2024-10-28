@@ -279,8 +279,7 @@ static void handle_user_input(BF_state *state) {
 static void print_state(BF_state *state) {
 
   size_t term_width = get_terminal_width();
-  size_t n_lines = 15;
-  char buffer[term_width * n_lines + n_lines];
+  char buffer[term_width * N_LINES_IN_DEBUG];
   char *bp = buffer;
 
   clear_terminal();
