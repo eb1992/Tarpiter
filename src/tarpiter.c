@@ -1,6 +1,4 @@
 #include "../include/tarpiter.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 /*
 Beware of the Turing tar-pit in which everything is possible but nothing of
