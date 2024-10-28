@@ -295,7 +295,7 @@ static void print_state(BF_state *state) {
                               "Evaluated instructions: %zu\n\n", state->ticks);
 
   append_program(state, term_width, &debug_buffer_ptr);
-  append_cells(state->cells, state->cur_cell, term_width, &debug_buffer_ptr);
+  append_cells(state, term_width, &debug_buffer_ptr);
   debug_buffer_ptr +=
       sprintf(debug_buffer_ptr, "[Enter]     - Evaluate single instruction.\n"
                                 "<N> [Enter] - Evaluate <N> instructions.\n"
@@ -324,10 +324,9 @@ static void append_program(BF_state *state, size_t term_width,
 }
 
 // Append the closest memory cells to the buffer
-static void append_cells(const unsigned char *cells,
-                         const unsigned char *cur_cell, size_t term_width,
+static void append_cells(BF_state *state, size_t term_width,
                          char **debug_buffer_ptr) {
-  const size_t cell_index = (size_t)(cur_cell - cells);
+  const size_t cell_index = (size_t)(state->cur_cell - state->cells);
   const size_t half_row = term_width / SHOWN_CELL_WIDTH / 2;
   const size_t n_shown = term_width / SHOWN_CELL_WIDTH;
   const size_t first_cell = cell_index > half_row ? cell_index - half_row : 0;
@@ -341,20 +340,19 @@ static void append_cells(const unsigned char *cells,
   *(*debug_buffer_ptr)++ = '\n';
 
   for (size_t i = 0; i < n_shown; i++) {
-    unsigned char c =
-        isprint(cells[first_cell + i]) ? cells[first_cell + i] : ' ';
-    *debug_buffer_ptr += sprintf(*debug_buffer_ptr, "[ %c ]", c);
+    unsigned char value = state->cells[first_cell + i];
+    unsigned char chr = isprint(value) ? value : ' ';
+    *debug_buffer_ptr += sprintf(*debug_buffer_ptr, "[ %c ]", chr);
   }
   *(*debug_buffer_ptr)++ = '\n';
 
   for (size_t i = 0; i < n_shown; i++) {
     *debug_buffer_ptr +=
-        sprintf(*debug_buffer_ptr, "[%3d]", cells[first_cell + i]);
+        sprintf(*debug_buffer_ptr, "[%3d]", state->cells[first_cell + i]);
   }
   *(*debug_buffer_ptr)++ = '\n';
 
-  append_pointer((size_t)(cur_cell - cells), SHOWN_CELL_WIDTH,
-                 debug_buffer_ptr);
+  append_pointer(cell_index, SHOWN_CELL_WIDTH, debug_buffer_ptr);
   *(*debug_buffer_ptr)++ = '\n';
 }
 
