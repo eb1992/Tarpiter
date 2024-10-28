@@ -138,9 +138,9 @@ static void evaluate_tokens(Token tokens[], size_t n_tokens, bool debug) {
     memset(state.cells, 0, N_CELLS * sizeof(unsigned char));
 
     state.cur_cell = state.cells;
-    state.bp = state.output_buffer;
+    state.output_buffer_ptr = state.output_buffer;
 
-    *state.bp = '\0';
+    *state.output_buffer_ptr = '\0';
     state.skip = 0;
     state.ticks = 0;
 
@@ -201,12 +201,13 @@ static void evaluate_token(BF_state *state) {
     break;
 
   case PRINT: {
-    if (state->bp - state->output_buffer < OUTPUT_BUFFER_SIZE) {
-      *(state->bp)++ = (char)(*state->cur_cell == 10 ? '\n' : *state->cur_cell);
-      *state->bp = '\0';
+    if (state->output_buffer_ptr - state->output_buffer < OUTPUT_BUFFER_SIZE) {
+      *(state->output_buffer_ptr)++ =
+          (char)(*state->cur_cell == 10 ? '\n' : *state->cur_cell);
+      *state->output_buffer_ptr = '\0';
     } else {
       puts(state->output_buffer);
-      state->bp = state->output_buffer;
+      state->output_buffer_ptr = state->output_buffer;
     }
     break;
   }
@@ -214,7 +215,7 @@ static void evaluate_token(BF_state *state) {
   case INPUT: {
     if (!state->debug) {
       puts(state->output_buffer);
-      state->bp = state->output_buffer;
+      state->output_buffer_ptr = state->output_buffer;
     }
 
     int n = getchar();

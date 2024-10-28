@@ -40,7 +40,7 @@ typedef struct {
   unsigned char *cells;
   unsigned char *cur_cell;
   char *output_buffer;
-  char *bp;
+  char *output_buffer_ptr;
   bool restart;
   bool debug;
   size_t skip;
