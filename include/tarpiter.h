@@ -46,26 +46,24 @@ typedef struct {
   size_t skip;
   size_t ticks;
   size_t instr_ptr;
-  Token *tokens;
-  size_t n_tokens;
-} BF_state;
+} eval_state;
 
 static void process_arguments(int argc, char **argv, bool *debug);
 static void tokenize_file(FILE *file, Token tokens[], size_t *n_tokens);
 static void optimize(Token tokens[], size_t *n_tokens);
 static void calculate_jumps(Token tokens[], size_t n_tokens);
 static void evaluate_tokens(Token tokens[], size_t n_tokens, bool debug);
-static void evaluate_token(BF_state *state);
+static void evaluate_token(Token token, eval_state *state);
 static bool is_valid(int chr);
 static FILE *open_file(const char *file_name);
 static size_t get_file_size(FILE *file);
 static size_t get_terminal_width(void);
 static void print_usage(void);
-static void handle_user_input(BF_state *state);
-static void print_state(BF_state *state);
-static void append_program(BF_state *state, size_t term_width,
-                           char **debug_buffer_ptr);
-static void append_cells(BF_state *state, size_t term_width,
+static void handle_user_input(eval_state *state);
+static void print_state(eval_state *state, Token tokens[], size_t n_tokens);
+static void append_program(eval_state *state, Token tokens[], size_t n_tokens,
+                           size_t term_width, char **debug_buffer_ptr);
+static void append_cells(eval_state *state, size_t term_width,
                          char **debug_buffer_ptr);
 static void append_pointer(size_t steps, size_t step_size,
                            char **debug_buffer_ptr);

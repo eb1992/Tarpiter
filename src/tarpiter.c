@@ -121,10 +121,8 @@ static void calculate_jumps(Token tokens[], size_t n_tokens) {
 // Evaluates the whole program
 static void evaluate_tokens(Token tokens[], size_t n_tokens, bool debug) {
 
-  BF_state state;
+  eval_state state;
   state.debug = debug;
-  state.tokens = tokens;
-  state.n_tokens = n_tokens;
   state.cells = malloc(N_CELLS * sizeof(unsigned char));
   state.output_buffer = malloc(OUTPUT_BUFFER_SIZE * sizeof(char));
 
@@ -147,14 +145,14 @@ static void evaluate_tokens(Token tokens[], size_t n_tokens, bool debug) {
     for (state.instr_ptr = 0; state.instr_ptr < n_tokens; state.instr_ptr++) {
 
       if (debug && state.skip <= state.ticks) {
-        print_state(&state);
+        print_state(&state, tokens, n_tokens);
         handle_user_input(&state);
         if (state.restart) {
           break;
         }
       }
 
-      evaluate_token(&state);
+      evaluate_token(tokens[state.instr_ptr], &state);
       state.ticks++;
     }
     if (!debug) {
@@ -167,9 +165,7 @@ static void evaluate_tokens(Token tokens[], size_t n_tokens, bool debug) {
 }
 
 // Evaluate a single token
-static void evaluate_token(BF_state *state) {
-  Token token = state->tokens[state->instr_ptr];
-
+static void evaluate_token(Token token, eval_state *state) {
   switch (token.op) {
 
   case LEFT:
@@ -266,7 +262,7 @@ static void print_usage(void) {
 }
 
 // Handle user input when debugging
-static void handle_user_input(BF_state *state) {
+static void handle_user_input(eval_state *state) {
   char line[MIN_ROW_SIZE];
   size_t steps;
   if (fgets(line, sizeof(line), stdin)) {
@@ -284,8 +280,7 @@ static void handle_user_input(BF_state *state) {
 }
 
 // Print the current state when debugging
-static void print_state(BF_state *state) {
-
+static void print_state(eval_state *state, Token tokens[], size_t n_tokens){
   size_t term_width = get_terminal_width();
   char debug_buffer[term_width * N_LINES_IN_DEBUG];
   char *debug_buffer_ptr = debug_buffer;
@@ -294,7 +289,7 @@ static void print_state(BF_state *state) {
   debug_buffer_ptr += sprintf(debug_buffer_ptr,
                               "Evaluated instructions: %zu\n\n", state->ticks);
 
-  append_program(state, term_width, &debug_buffer_ptr);
+  append_program(state, tokens, n_tokens, term_width, &debug_buffer_ptr);
   append_cells(state, term_width, &debug_buffer_ptr);
   debug_buffer_ptr +=
       sprintf(debug_buffer_ptr, "[Enter]     - Evaluate single instruction.\n"
@@ -309,14 +304,14 @@ static void print_state(BF_state *state) {
 }
 
 // Append the closest part of the program to the buffer
-static void append_program(BF_state *state, size_t term_width,
-                           char **debug_buffer_ptr) {
+static void append_program(eval_state *state, Token tokens[], size_t n_tokens,
+                           size_t term_width, char **debug_buffer_ptr){
   size_t half = term_width / 2;
   size_t first_token = state->instr_ptr > half ? state->instr_ptr - half : 0;
   size_t i;
 
-  for (i = 0; i < term_width && state->n_tokens > first_token + i; i++) {
-    *(*debug_buffer_ptr)++ = state->tokens[first_token + i].op;
+  for (i = 0; i < term_width && n_tokens > first_token + i; i++) {
+    *(*debug_buffer_ptr)++ = tokens[first_token + i].op;
   }
   *(*debug_buffer_ptr)++ = '\n';
 
@@ -324,7 +319,7 @@ static void append_program(BF_state *state, size_t term_width,
 }
 
 // Append the closest memory cells to the buffer
-static void append_cells(BF_state *state, size_t term_width,
+static void append_cells(eval_state *state, size_t term_width,
                          char **debug_buffer_ptr) {
   const size_t cell_index = (size_t)(state->cur_cell - state->cells);
   const size_t half_row = term_width / SHOWN_CELL_WIDTH / 2;
