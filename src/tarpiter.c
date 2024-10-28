@@ -17,21 +17,23 @@ int main(int argc, char **argv) {
 
   FILE *file = open_file(argv[1]);
 
-  Token tokens[get_file_size(file)];
-  size_t n_tokens;
+  Tokens tokens;
 
-  tokenize_file(file, tokens, &n_tokens);
+  tokens.list = malloc(get_file_size(file) * sizeof(Token));
+
+  tokenize_file(file, &tokens);
 
   fclose(file);
 
   if (!debug) {
-    optimize(tokens, &n_tokens);
+    optimize(&tokens);
   }
 
-  calculate_jumps(tokens, n_tokens);
+  calculate_jumps(&tokens);
 
-  evaluate_tokens(tokens, n_tokens, debug);
+  evaluate_tokens(&tokens, debug);
 
+  free(tokens.list);
   return EXIT_SUCCESS;
 }
 
@@ -53,13 +55,13 @@ static void process_arguments(int argc, char **argv, bool *debug) {
 }
 
 // Tokenize the file content into tokens
-static void tokenize_file(FILE *file, Token tokens[], size_t *n_tokens) {
+static void tokenize_file(FILE *file, Tokens *tokens) {
   size_t n = 0;
 
   int c = fgetc(file);
   while (c != EOF) {
     if (is_valid(c)) {
-      tokens[n++] = (Token){.op = c, .amount = 1};
+      tokens->list[n++] = (Token){.op = c, .amount = 1};
     }
     c = fgetc(file);
   }
@@ -69,37 +71,37 @@ static void tokenize_file(FILE *file, Token tokens[], size_t *n_tokens) {
     exit(EXIT_FAILURE);
   }
 
-  *n_tokens = n;
+  tokens->n_tokens = n;
 }
 
 // Optimize the tokens by merging consecutive operations of the same type
-static void optimize(Token tokens[], size_t *n_tokens) {
+static void optimize(Tokens *tokens) {
   size_t new_n_tokens = 0;
-  size_t old_n_tokens = *n_tokens;
+  size_t old_n_tokens = tokens->n_tokens;
 
   for (size_t i = 0; i < old_n_tokens; i++) {
-    tokens[new_n_tokens] = tokens[i];
-    Operator op = tokens[i].op;
+    tokens->list[new_n_tokens] = tokens->list[i];
+    Operator op = tokens->list[i].op;
     if (op == INCR || op == DECR || op == RIGHT || op == LEFT) {
       size_t n_same_op = 1;
-      while (i < old_n_tokens - 1 && tokens[i + 1].op == op) {
+      while (i < old_n_tokens - 1 && tokens->list[i + 1].op == op) {
         n_same_op++;
         i++;
       }
-      tokens[new_n_tokens].amount = n_same_op;
+      tokens->list[new_n_tokens].amount = n_same_op;
     }
     new_n_tokens++;
   }
-  *n_tokens = new_n_tokens;
+  tokens->n_tokens = new_n_tokens;
 }
 
 // Handle jump instructions by giving addresses to '[' and ']'
-static void calculate_jumps(Token tokens[], size_t n_tokens) {
-  size_t stack[n_tokens];
+static void calculate_jumps(Tokens *tokens) {
+  size_t stack[tokens->n_tokens];
   size_t stack_p = 0;
 
-  for (size_t i = 0; i < n_tokens; i++) {
-    Operator op = tokens[i].op;
+  for (size_t i = 0; i < tokens->n_tokens; i++) {
+    Operator op = tokens->list[i].op;
     if (op == JMP_F) {
       stack[stack_p++] = i;
     } else if (op == JMP_B) {
@@ -108,8 +110,8 @@ static void calculate_jumps(Token tokens[], size_t n_tokens) {
         exit(EXIT_FAILURE);
       }
       size_t forward = stack[--stack_p];
-      tokens[i].address = forward;
-      tokens[forward].address = i;
+      tokens->list[i].address = forward;
+      tokens->list[forward].address = i;
     }
   }
   if (stack_p > 0) {
@@ -119,8 +121,7 @@ static void calculate_jumps(Token tokens[], size_t n_tokens) {
 }
 
 // Evaluates the whole program
-static void evaluate_tokens(Token tokens[], size_t n_tokens, bool debug) {
-
+static void evaluate_tokens(Tokens *tokens, bool debug) {
   eval_state state;
   state.debug = debug;
   state.cells = malloc(N_CELLS * sizeof(unsigned char));
@@ -142,17 +143,18 @@ static void evaluate_tokens(Token tokens[], size_t n_tokens, bool debug) {
     state.skip = 0;
     state.ticks = 0;
 
-    for (state.instr_ptr = 0; state.instr_ptr < n_tokens; state.instr_ptr++) {
+    for (state.instr_ptr = 0; state.instr_ptr < tokens->n_tokens;
+         state.instr_ptr++) {
 
       if (debug && state.skip <= state.ticks) {
-        print_state(&state, tokens, n_tokens);
+        print_state(&state, tokens);
         handle_user_input(&state);
         if (state.restart) {
           break;
         }
       }
 
-      evaluate_token(tokens[state.instr_ptr], &state);
+      evaluate_token(tokens->list[state.instr_ptr], &state);
       state.ticks++;
     }
     if (!debug) {
@@ -280,7 +282,7 @@ static void handle_user_input(eval_state *state) {
 }
 
 // Print the current state when debugging
-static void print_state(eval_state *state, Token tokens[], size_t n_tokens){
+static void print_state(eval_state *state, Tokens *tokens) {
   size_t term_width = get_terminal_width();
   char debug_buffer[term_width * N_LINES_IN_DEBUG];
   char *debug_buffer_ptr = debug_buffer;
@@ -289,7 +291,7 @@ static void print_state(eval_state *state, Token tokens[], size_t n_tokens){
   debug_buffer_ptr += sprintf(debug_buffer_ptr,
                               "Evaluated instructions: %zu\n\n", state->ticks);
 
-  append_program(state, tokens, n_tokens, term_width, &debug_buffer_ptr);
+  append_program(state, tokens, term_width, &debug_buffer_ptr);
   append_cells(state, term_width, &debug_buffer_ptr);
   debug_buffer_ptr +=
       sprintf(debug_buffer_ptr, "[Enter]     - Evaluate single instruction.\n"
@@ -304,14 +306,14 @@ static void print_state(eval_state *state, Token tokens[], size_t n_tokens){
 }
 
 // Append the closest part of the program to the buffer
-static void append_program(eval_state *state, Token tokens[], size_t n_tokens,
-                           size_t term_width, char **debug_buffer_ptr){
+static void append_program(eval_state *state, Tokens *tokens, size_t term_width,
+                           char **debug_buffer_ptr) {
   size_t half = term_width / 2;
   size_t first_token = state->instr_ptr > half ? state->instr_ptr - half : 0;
   size_t i;
 
-  for (i = 0; i < term_width && n_tokens > first_token + i; i++) {
-    *(*debug_buffer_ptr)++ = tokens[first_token + i].op;
+  for (i = 0; i < term_width && tokens->n_tokens > first_token + i; i++) {
+    *(*debug_buffer_ptr)++ = tokens->list[first_token + i].op;
   }
   *(*debug_buffer_ptr)++ = '\n';
 
