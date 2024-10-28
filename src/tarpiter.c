@@ -1,14 +1,14 @@
-/*
-Beware of the Turing tar-pit in which everything is possible but nothing of
-interest is easy.
-  - Alan Perlis
-*/
-
 #include "../include/tarpiter.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/*
+Beware of the Turing tar-pit in which everything is possible but nothing of
+interest is easy.
+  - Alan Perlis
+*/
 
 int main(int argc, char **argv) {
   bool debug = false;
@@ -308,6 +308,21 @@ static void print_state(BF_state *state) {
   puts(state->output_buffer);
 }
 
+// Append the closest part of the program to the buffer
+static void append_program(BF_state *state, size_t term_width,
+                           char **debug_buffer_ptr) {
+  size_t half = term_width / 2;
+  size_t first_token = state->instr_ptr > half ? state->instr_ptr - half : 0;
+  size_t i;
+
+  for (i = 0; i < term_width && state->n_tokens > first_token + i; i++) {
+    *(*debug_buffer_ptr)++ = state->tokens[first_token + i].op;
+  }
+  *(*debug_buffer_ptr)++ = '\n';
+
+  append_pointer(state->instr_ptr - first_token, 1, debug_buffer_ptr);
+}
+
 // Append the closest memory cells to the buffer
 static void append_cells(const unsigned char *cells,
                          const unsigned char *cur_cell, size_t term_width,
@@ -351,21 +366,6 @@ static void append_pointer(size_t steps, size_t step_size,
   *(*debug_buffer_ptr + n_chars++) = '^';
   *(*debug_buffer_ptr + n_chars++) = '\n';
   *debug_buffer_ptr += n_chars;
-}
-
-// Append the closest part of the program to the buffer
-static void append_program(BF_state *state, size_t term_width,
-                           char **debug_buffer_ptr) {
-  size_t half = term_width / 2;
-  size_t first_token = state->instr_ptr > half ? state->instr_ptr - half : 0;
-  size_t i;
-
-  for (i = 0; i < term_width && state->n_tokens > first_token + i; i++) {
-    *(*debug_buffer_ptr)++ = state->tokens[first_token + i].op;
-  }
-  *(*debug_buffer_ptr)++ = '\n';
-
-  append_pointer(state->instr_ptr - first_token, 1, debug_buffer_ptr);
 }
 
 // Clear the terminal
