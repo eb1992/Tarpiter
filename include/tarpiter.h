@@ -59,16 +59,16 @@ static void evaluate_token(BF_state *state);
 static bool is_valid(int chr);
 static FILE *open_file(const char *file_name);
 static size_t get_file_size(FILE *file);
-static size_t get_terminal_width();
+static size_t get_terminal_width(void);
 static void print_usage(void);
 static void handle_user_input(BF_state *state);
 static void print_state(BF_state *state);
-static void append_program(BF_state *state, size_t term_width, char **debug_buffer_ptr);
-static void append_cells(BF_state *state, size_t term_width, char **debug_buffer_ptr);
-// static void append_cells(const unsigned char *cells,
-                        //  const unsigned char *cur_cell, size_t term_width,
-                        //  char **debug_buffer_ptr);
-static void append_pointer(size_t steps, size_t step_size, char **debug_buffer_ptr);
+static void append_program(BF_state *state, size_t term_width,
+                           char **debug_buffer_ptr);
+static void append_cells(BF_state *state, size_t term_width,
+                         char **debug_buffer_ptr);
+static void append_pointer(size_t steps, size_t step_size,
+                           char **debug_buffer_ptr);
 static void clear_terminal(void);
 
 #endif // TARPITER_H
