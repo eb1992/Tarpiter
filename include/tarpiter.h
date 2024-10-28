@@ -38,7 +38,7 @@ typedef struct {
 
 typedef struct {
   Token *list;
-  size_t n_tokens;
+  size_t count;
 } Tokens;
 
 typedef struct {

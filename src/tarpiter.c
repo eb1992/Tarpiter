@@ -1,8 +1,6 @@
 #include "../include/tarpiter.h"
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 /*
 Beware of the Turing tar-pit in which everything is possible but nothing of
@@ -21,6 +19,12 @@ int main(int argc, char **argv) {
 
   tokens.list = malloc(get_file_size(file) * sizeof(Token));
 
+  if (tokens.list == NULL) {
+    fprintf(stderr, "Memory allocation failed");
+    fclose(file);
+    exit(EXIT_FAILURE);
+  }
+
   tokenize_file(file, &tokens);
 
   fclose(file);
@@ -34,6 +38,7 @@ int main(int argc, char **argv) {
   evaluate_tokens(&tokens, debug);
 
   free(tokens.list);
+
   return EXIT_SUCCESS;
 }
 
@@ -71,13 +76,13 @@ static void tokenize_file(FILE *file, Tokens *tokens) {
     exit(EXIT_FAILURE);
   }
 
-  tokens->n_tokens = n;
+  tokens->count = n;
 }
 
 // Optimize the tokens by merging consecutive operations of the same type
 static void optimize(Tokens *tokens) {
   size_t new_n_tokens = 0;
-  size_t old_n_tokens = tokens->n_tokens;
+  size_t old_n_tokens = tokens->count;
 
   for (size_t i = 0; i < old_n_tokens; i++) {
     tokens->list[new_n_tokens] = tokens->list[i];
@@ -92,15 +97,15 @@ static void optimize(Tokens *tokens) {
     }
     new_n_tokens++;
   }
-  tokens->n_tokens = new_n_tokens;
+  tokens->count = new_n_tokens;
 }
 
 // Handle jump instructions by giving addresses to '[' and ']'
 static void calculate_jumps(Tokens *tokens) {
-  size_t stack[tokens->n_tokens];
+  size_t stack[tokens->count];
   size_t stack_p = 0;
 
-  for (size_t i = 0; i < tokens->n_tokens; i++) {
+  for (size_t i = 0; i < tokens->count; i++) {
     Operator op = tokens->list[i].op;
     if (op == JMP_F) {
       stack[stack_p++] = i;
@@ -143,7 +148,7 @@ static void evaluate_tokens(Tokens *tokens, bool debug) {
     state.skip = 0;
     state.ticks = 0;
 
-    for (state.instr_ptr = 0; state.instr_ptr < tokens->n_tokens;
+    for (state.instr_ptr = 0; state.instr_ptr < tokens->count;
          state.instr_ptr++) {
 
       if (debug && state.skip <= state.ticks) {
@@ -312,7 +317,7 @@ static void append_program(eval_state *state, Tokens *tokens, size_t term_width,
   size_t first_token = state->instr_ptr > half ? state->instr_ptr - half : 0;
   size_t i;
 
-  for (i = 0; i < term_width && tokens->n_tokens > first_token + i; i++) {
+  for (i = 0; i < term_width && tokens->count > first_token + i; i++) {
     *(*debug_buffer_ptr)++ = tokens->list[first_token + i].op;
   }
   *(*debug_buffer_ptr)++ = '\n';
